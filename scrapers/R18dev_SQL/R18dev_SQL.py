@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 # Set Language
-LANG='JA' # JA or EN
+LANG='EN' # JA or EN
 # Uncomment the following line to force service_code='digital'
 # service_code = 'digital'
 # Uncomment the following line to force service_code='mono'
@@ -125,9 +125,7 @@ if (sys.argv[1] == "sceneByName"):
 elif (sys.argv[1] == "sceneByQueryFragment" or sys.argv[1] == "sceneByFragment"):
     try:
         input_title = i['title']
-        print(input_title, file=sys.stderr)
         if(re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title)):
-            print("XXXXXXXX", file=sys.stderr)
             dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title).group(2)
             dvd_code_found = True
     except:
@@ -190,23 +188,25 @@ director_ja = ', '.join(director_ja)
 director_en = ', '.join(director_en)
 
 tags_info = get_tags(content_id)
-tags_ja = [i[0] for i in tags_info]
-tags_en = [i[2] if i[1] is None else i[1] for i in tags_info]
-tags_en = [i if j is None else j for i,j in zip(tags_ja,tags_en)]
+tags_ja = [{'name': i[0]} for i in tags_info]
+tags_en = [{'name': i[2]} if i[1] is None else {'name': i[1]} for i in tags_info]
+tags_en = [{'name': i['name']} if j['name'] is None else {'name': j['name']} for i,j in zip(tags_ja,tags_en)]
 
 studio_info = get_studio(maker_id)
 studio_ja = {'name': studio_info[0]}
 studio_en = {'name': studio_info[2]} if studio_info[1] is None else {'name': studio_info[1]}
 studio_en = {'name': studio_info[0]} if studio_en['name'] is None else studio_en
 
-if series_id is None:
-    series_ja = ""
-    series_en = ""
+#if (series_id is None): Need to fix
+if (True):
+    series_ja = None
+    series_en = None
 else:
     series_info = get_series(series_id)
-    series_ja = series_info[0]
-    series_en = series_info[2] if series_info[1] is None else series_info[1]
-    series_en = series_info[0] if series_en is None else series_en
+    series_ja = {'name': series_info[0]}
+    series_en = {'name': series_info[2]} if series_info[1] is None else {'name': series_info[1]}
+    series_en = {'name': series_info[0]} if series_en['name'] is None else series_en
+
 
 res = {}
 
@@ -224,10 +224,12 @@ if (LANG == 'JA'):
         res["performers"] = actress_ja
     if director_ja is not None:
         res["director"] = director_ja
+    if tags_ja is not None:
+        res["tags"] = tags_ja
     if studio_ja is not None:
         res["studio"] = studio_ja
-    if title_ja is not None:
-        res["movie"] = title_ja
+    if series_ja is not None:
+        res["groups"] = series_ja
 elif (LANG == 'EN'):
     if title_en is not None:
         res["title"] = title_en
@@ -237,10 +239,12 @@ elif (LANG == 'EN'):
         res["performers"] = actress_en
     if director_en is not None:
         res["director"] = director_en
+    if tags_en is not None:
+        res["tags"] = tags_en
     if studio_en is not None:
         res["studio"] = studio_en
-    if title_en is not None:
-        res["movie"] = title_en
+    if series_en is not None:
+        res["groups"] = series_en
 
 print(json.dumps(res))
 conn.close()
