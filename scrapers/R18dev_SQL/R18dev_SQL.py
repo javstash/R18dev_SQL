@@ -151,6 +151,9 @@ if (sys.argv[1] == "sceneByName"):
     if(re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string)):
         dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string).group(2)
         dvd_code_found = True
+    else:
+        content_id = query_string
+        content_id_found = True
 elif (sys.argv[1] == "sceneByQueryFragment" or sys.argv[1] == "sceneByFragment"):
     try:
         input_title = i['title']
@@ -228,10 +231,13 @@ studio_ja = {'name': studio_info[0]}
 studio_en = {'name': studio_info[2]} if studio_info[1] is None else {'name': studio_info[1]}
 studio_en = {'name': studio_info[0]} if studio_en['name'] is None else studio_en
 
-if(use_label_as_studio):
+if(label_id is None):
+    label_ja = None
+    label_en = None
+else:
     label_info = get_label(label_id)
     label_ja = {'name': label_info[0]}
-    label_en = {'name': label_info[2]} if label_info[1] is None else {'name': label_info[1]}
+    label_en = {'name': decensor(label_info[2])} if label_info[1] is None else {'name': decensor(label_info[1])}
     label_en = {'name': label_info[0]} if label_en['name'] is None else label_en
 
 if (series_id is None):
@@ -240,9 +246,8 @@ if (series_id is None):
 else:
     series_info = get_series(series_id)
     series_ja = {'name': series_info[0]}
-    series_en = {'name': series_info[2]} if series_info[1] is None else {'name': series_info[1]}
+    series_en = {'name': decensor(series_info[2])} if series_info[1] is None else {'name': decensor(series_info[1])}
     series_en = {'name': series_info[0]} if series_en['name'] is None else series_en
-
 
 res = {}
 
@@ -289,6 +294,9 @@ elif (LANG == 'EN'):
         res["groups"] = [series_en]
 
 conn.close()
-print(json.dumps(res))
+if (sys.argv[1] == "sceneByName"):
+    print(json.dumps([res],ensure_ascii=False))
+else:
+    print(json.dumps(res,ensure_ascii=False))
 
 
