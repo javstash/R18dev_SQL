@@ -2,7 +2,11 @@
 
 # Database Setup
 
-This scraper requires access to a PostgreSQL server with R18.dev data. You can find the latest R18.dev database dump [here](https://r18.dev/dumps).
+This scraper requires access to a PostgreSQL server with R18.dev data. 
+
+A docker compose file and a bash script to fetch and import the latest R18.dev database dump can be found under `docker/`. Simply run `docker compose up -d` and then `setup_db.sh` to set up a PostgreSQL database with R18.dev data.
+
+f you already have PostgreSQL installed, you can find the latest R18.dev database dump [here](https://r18.dev/dumps).
 
 # Initial setup
 
