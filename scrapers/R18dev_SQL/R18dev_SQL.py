@@ -19,7 +19,7 @@ use_label_as_studio = False
 import sys, json, re, csv
 import psycopg2
 conn = psycopg2.connect(database="r18",
-                        host="postgres",
+                        host="localhost",
                         user="postgres",
                         password="postgres",
                         port="5432")
