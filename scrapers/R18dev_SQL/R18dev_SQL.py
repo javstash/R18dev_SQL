@@ -1,28 +1,27 @@
 # -*- coding: UTF-8 -*-
-# Set Language
-LANG='EN' # JA or EN
-service_code = '%'
+import sys, json, re, csv
+import psycopg2
 
+# Set Language
+LANG='JA' # JA or EN
+
+service_code = '%'
 # Uncomment the following line to force service_code='digital'
 # service_code = 'digital'
-
 # Uncomment the following line to force service_code='mono'
 # service_code = 'mono' 
 
 # If True, uses label instead of maker for studio (eg: Moodyz Acid instead of Moodyz)
 use_label_as_studio = False
 
-# Uncomment to enable logging (lol)
-#import py_common.log as log
-
-
-import sys, json, re, csv
-import psycopg2
 conn = psycopg2.connect(database="r18",
                         host="localhost",
                         user="postgres",
                         password="postgres",
                         port="5432")
+
+def log(*s):
+    print(*s, file=sys.stderr)
 
 def get_content_id(dvd_code, service_code='%'):
     cursor = conn.cursor()
@@ -143,50 +142,69 @@ def decensor(string):
 SUPER_DUPER_JAV_CODE_REGEX = r'.*?([a-zA-Z|tT28|tT38]+)-?(\d+)[zZ]?[eE]?(?:-pt)?(\d{1,2})?.*'
 
 i = json.loads(sys.stdin.read())
+log(json.dumps(i, ensure_ascii=False), "@", sys.argv[1])
 
 dvd_code_found = False
 content_id_found = False
+
 if (sys.argv[1] == "sceneByName"):
     query_string = i['name']
     if(re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string)):
         dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string).group(2)
         dvd_code_found = True
+        log(sys.argv[1],"| DVD CODE: "+dvd_code)
     else:
         content_id = query_string
         content_id_found = True
+        log(sys.argv[1],"| CONTENT ID: "+content_id)
+
 elif (sys.argv[1] == "sceneByQueryFragment" or sys.argv[1] == "sceneByFragment"):
+    flag = False
     try:
-        input_title = i['title']
-        if(re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title)):
-            dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title).group(2)
-            dvd_code_found = True
+        for j in i['urls']:
+            input_url = j
+            if(re.search(r'.*id=(.*)/.*',input_url)):
+                content_id = re.search(r'.*id=(.*)/.*',input_url).group(1)
+                log(sys.argv[1],"| URL | CONTENT ID: "+content_id)
+                flag = True
+                content_id_found = True
     except:
         pass
     try:
-        input_code = i['code']
-        if(re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code)):
-            dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code).group(2)
-            dvd_code_found = True
+        if(flag == False):
+            input_code = i['code']
+            if(re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code)):
+                dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code).group(2)
+                log(sys.argv[1],"| CODE | DVD CODE: "+dvd_code)
+                dvd_code_found = True
     except:
         pass
     try:
-        input_url = i['url']
-        if(re.search(r'.*id=(.*)/.*',input_url)):
-            content_id = re.search(r'.*id=(.*)/.*',input_url).group(1)
-            content_id_found = True
+        if(dvd_code_found == False and flag == False):
+            input_title = i['title']
+            if(re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title)):
+                dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title).group(2)
+                log(sys.argv[1],"| TITLE | DVD CODE: "+dvd_code)
+                dvd_code_found = True
+        else:
+            pass
     except:
         pass
+
 elif (sys.argv[1] == "sceneByURL"):
     input_url = i['url']
     if(re.search(r'.*id=(.*)/.*',input_url)):
         content_id = re.search(r'.*id=(.*)/.*',input_url).group(1)
+        log(sys.argv[1],"| URL | CONTENT ID: "+content_id)
         content_id_found = True
 
 if(content_id_found == False):
     content_ids = get_content_id(dvd_code, service_code)
     content_id = content_ids[0][1]
+    log("DVD CODE:", dvd_code," -> ",content_ids[0][1],"@",content_ids[0][2])
 
 scene_info = get_scene_info(content_id, service_code)
+log("CONTENT ID:", content_id,"@",service_code)
 
 title_ja = scene_info[0]
 title_en = decensor(scene_info[2]) if scene_info[1] is None else decensor(scene_info[1])
