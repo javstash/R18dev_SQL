@@ -14,6 +14,9 @@ service_code = '%'
 # If True, uses label instead of maker for studio (eg: Moodyz Acid instead of Moodyz)
 use_label_as_studio = False
 
+# Set ensure_ascii to True to enable UTF-8 debug prints
+ensure_ascii = False
+
 conn = psycopg2.connect(database="r18",
                         host="localhost",
                         user="postgres",
@@ -142,7 +145,7 @@ def decensor(string):
 SUPER_DUPER_JAV_CODE_REGEX = r'.*?([a-zA-Z|tT28|tT38]+)-?(\d+)[zZ]?[eE]?(?:-pt)?(\d{1,2})?.*'
 
 i = json.loads(sys.stdin.read())
-log(json.dumps(i, ensure_ascii=False), "@", sys.argv[1])
+log(json.dumps(i, ensure_ascii=ensure_ascii, encoding="utf-8"), "@", sys.argv[1])
 
 dvd_code_found = False
 content_id_found = False
@@ -313,8 +316,8 @@ elif (LANG == 'EN'):
 
 conn.close()
 if (sys.argv[1] == "sceneByName"):
-    print(json.dumps([res],ensure_ascii=False))
+    print(json.dumps([res],ensure_ascii=ensure_ascii, encoding="utf-8")) 
 else:
-    print(json.dumps(res,ensure_ascii=False))
+    print(json.dumps(res,ensure_ascii=ensure_ascii, encoding="utf-8")) 
 
 
