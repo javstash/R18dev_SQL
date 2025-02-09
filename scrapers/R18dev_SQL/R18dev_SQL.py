@@ -14,8 +14,8 @@ service_code = '%'
 # If True, uses label instead of maker for studio (eg: Moodyz Acid instead of Moodyz)
 use_label_as_studio = False
 
-# Set ensure_ascii to True to enable UTF-8 debug prints
-ensure_ascii = False
+# Set ensure_ascii to False to enable UTF-8 debug prints
+ensure_ascii = True
 
 conn = psycopg2.connect(database="r18",
                         host="localhost",
