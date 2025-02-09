@@ -28,7 +28,7 @@ def get_content_id(dvd_code, service_code='%'):
     cursor.execute(f"""
                    SELECT dvd_id, content_id, service_code
                    FROM public.derived_video 
-                   WHERE dvd_id='{dvd_code}' AND service_code like '{service_code}'
+                   WHERE UPPER(dvd_id)='{dvd_code}' AND service_code like '{service_code}'
                    ORDER BY dvd_id ASC, service_code ASC
                    """)
     result = cursor.fetchall()

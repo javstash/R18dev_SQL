@@ -11,5 +11,5 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./stash-box-db:/var/lib/postgresql/data
-      
+      - ./r18-db:/var/lib/postgresql/data
+      - ./setup_db.sh:/setup_db.sh

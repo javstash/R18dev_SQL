@@ -1,9 +1,22 @@
 #!/bin/bash
 
-# Check R18.dev for latest dump
+if [ -e latest ]; then
+	OLD=` date -r latest +%s 2>/dev/null `
+else
+	OLD=0
+fi
+
 wget -N https://r18.dev/dumps/latest
-# Remove existing database
-echo "DROP DATABASE IF EXISTS r18;" | docker exec -i postgres psql -U postgres
-# Load dump to new database
-echo "CREATE DATABASE r18;" | docker exec -i postgres psql -U postgres
-zcat latest | docker exec -i postgres psql -U postgres -d r18
+NEW=` date -r latest +%s 2>/dev/null `
+
+if [ "$NEW" = "$OLD" ]; then
+    echo "R18.dev Database Refresh Completed"
+else
+    psql -U postgres -c "DROP DATABASE IF EXISTS r18;"
+	psql -U postgres -c "CREATE DATABASE r18;"
+	zcat latest | psql -U postgres -d r18
+	echo "R18.dev Database Refresh Completed"
+fi
+
+
+
