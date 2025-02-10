@@ -201,7 +201,7 @@ elif (sys.argv[1] == "sceneByURL"):
         content_id_found = True
 
 if(content_id_found == False):
-    content_ids = get_content_id(dvd_code, service_code)
+    content_ids = get_content_id(dvd_code.upper(), service_code)
     content_id = content_ids[0][1]
     log("DVD CODE:", dvd_code," -> ",content_ids[0][1],"@",content_ids[0][2])
 
