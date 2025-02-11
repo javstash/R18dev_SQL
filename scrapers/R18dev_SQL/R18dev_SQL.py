@@ -4,6 +4,20 @@ import psycopg2
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
+def log(*s):
+    print(*s, file=sys.stderr)
+
+try:
+    import psycopg2
+except ModuleNotFoundError:
+    log("ERROR | psycopg2 not found, try pip install psycopg2-binary")
+    sys.exit(1)
+
+if(sys.platform=='win32'):
+    ensure_ascii=True
+else:
+    ensure_ascii=False
+
 # Set Language
 LANG='JA' # JA or EN
 
@@ -21,9 +35,6 @@ conn = psycopg2.connect(database="r18",
                         user="postgres",
                         password="postgres",
                         port="5432")
-
-def log(*s):
-    print(*s, file=sys.stderr)
 
 def get_content_id(dvd_code, service_code='%'):
     cursor = conn.cursor()
@@ -141,35 +152,49 @@ def decensor(string):
             string = string.replace(row_decensor[0],row_decensor[1])
     return string
 
-SUPER_DUPER_JAV_CODE_REGEX = r'.*?([a-zA-Z|tT28|tT38]+)-?(\d+)[zZ]?[eE]?(?:-pt)?(\d{1,2})?.*'
+SUPER_DUPER_JAV_CODE_REGEX = r'.*?([a-zA-Z|tT28|tT38]+)-?(\d+[zZ]?[eE]?)(?:-pt)?(\d{1,2})?.*' # https://regex101.com/r/Q41zue/1
 
 i = json.loads(sys.stdin.read())
+<<<<<<< HEAD
+log(json.dumps(i, ensure_ascii=ensure_ascii), "@", sys.argv[1])
+=======
 log(json.dumps(i, ensure_ascii=False), "@", sys.argv[1])
+>>>>>>> refs/remotes/origin/main
 
 dvd_code_found = False
-content_id_found = False
 
 if (sys.argv[1] == "sceneByName"):
     query_string = i['name']
     if(re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string)):
         dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string).group(2)
         dvd_code_found = True
-        log(sys.argv[1],"| DVD CODE: "+dvd_code)
+        log(sys.argv[1],"| DVD CODE: "+dvd_code)        
     else:
         content_id = query_string
-        content_id_found = True
-        log(sys.argv[1],"| CONTENT ID: "+content_id)
+        log(sys.argv[1],"| DVD CODE NOT FOUND")
+        log(sys.argv[1],"| TRY CONTENT ID: "+content_id)
 
 elif (sys.argv[1] == "sceneByQueryFragment" or sys.argv[1] == "sceneByFragment"):
     flag = False
     try:
         for j in i['urls']:
             input_url = j
-            if(re.search(r'.*id=(.*)/.*',input_url)):
+            if (flag):
+                pass
+            elif(re.search(r'.*id=(.*)/.*',input_url)):
                 content_id = re.search(r'.*id=(.*)/.*',input_url).group(1)
-                log(sys.argv[1],"| URL | CONTENT ID: "+content_id)
+                log(sys.argv[1],"| URL | CONTENT ID: "+content_id + "|" + input_url)
                 flag = True
-                content_id_found = True
+            elif(re.search(r'.*dmm.*mono.*cid=(.*)/.*',input_url)):
+                content_id = re.search(r'.*dmm.*mono.*cid=(.*)/.*',input_url).group(1)
+                service_code = "mono"
+                log(sys.argv[1],"| URL | CONTENT ID: "+content_id+ "|" + input_url)
+                flag = True
+            elif(re.search(r'.*dmm.*videoa.*cid=(.*)/.*',input_url)):
+                content_id = re.search(r'.*dmm.*videoa.*cid=(.*)/.*',input_url).group(1)
+                service_code = "digital"
+                log(sys.argv[1],"| URL | CONTENT ID: "+content_id+ "|" + input_url)
+                flag = True
     except:
         pass
     try:
@@ -178,11 +203,12 @@ elif (sys.argv[1] == "sceneByQueryFragment" or sys.argv[1] == "sceneByFragment")
             if(re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code)):
                 dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code).group(2)
                 log(sys.argv[1],"| CODE | DVD CODE: "+dvd_code)
+                flag = True
                 dvd_code_found = True
     except:
         pass
     try:
-        if(dvd_code_found == False and flag == False):
+        if(flag == False):
             input_title = i['title']
             if(re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title)):
                 dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title).group(2)
@@ -197,13 +223,35 @@ elif (sys.argv[1] == "sceneByURL"):
     input_url = i['url']
     if(re.search(r'.*id=(.*)/.*',input_url)):
         content_id = re.search(r'.*id=(.*)/.*',input_url).group(1)
-        log(sys.argv[1],"| URL | CONTENT ID: "+content_id)
-        content_id_found = True
+        log(sys.argv[1],"| URL | CONTENT ID: "+content_id + "|" + input_url)
+        flag = True
+    elif(re.search(r'.*dmm.*mono.*cid=(.*)/.*',input_url)):
+        content_id = re.search(r'.*dmm.*mono.*cid=(.*)/.*',input_url).group(1)
+        service_code = "mono"
+        log(sys.argv[1],"| URL | CONTENT ID: "+content_id+ "|" + input_url)
+        flag = True
+    elif(re.search(r'.*dmm.*videoa.*cid=(.*)/.*',input_url)):
+        content_id = re.search(r'.*dmm.*videoa.*cid=(.*)/.*',input_url).group(1)
+        service_code = "digital"
+        log(sys.argv[1],"| URL | CONTENT ID: "+content_id+ "|" + input_url)
+        flag = True
 
+<<<<<<< HEAD
+if(dvd_code_found):
+    try:
+        content_ids = get_content_id(dvd_code.upper(), service_code)
+        content_id = content_ids[0][1]
+        log("DVD CODE:", dvd_code," -> ",content_ids[0][1],"@",content_ids[0][2])
+    except:
+        log("Cannot find a corresponding content_id for dvd_code:", dvd_code)
+        content_id = dvd_code.replace('-','')
+        log("Fallback to :", content_id)
+=======
 if(content_id_found == False):
     content_ids = get_content_id(dvd_code.upper(), service_code)
     content_id = content_ids[0][1]
     log("DVD CODE:", dvd_code," -> ",content_ids[0][1],"@",content_ids[0][2])
+>>>>>>> refs/remotes/origin/main
 
 scene_info = get_scene_info(content_id, service_code)
 log("CONTENT ID:", content_id,"@",service_code)
@@ -214,7 +262,7 @@ details_ja = scene_info[3]
 details_en = decensor(scene_info[4])
 date = scene_info[5].strftime("%Y-%m-%d")
 url = "https://r18.dev/videos/vod/movies/detail/-/id="+content_id+"/"
-service_code = scene_info[10]
+service_code = scene_info[11]
 if service_code == "digital":
     image = "https://awsimgsrc.dmm.com/dig/"+scene_info[6]+".jpg"
 else: # assume mono
@@ -315,8 +363,14 @@ elif (LANG == 'EN'):
 
 conn.close()
 if (sys.argv[1] == "sceneByName"):
+<<<<<<< HEAD
+    print(json.dumps([res],ensure_ascii=ensure_ascii)) 
+else:
+    print(json.dumps(res,ensure_ascii=ensure_ascii)) 
+=======
     print(json.dumps([res],ensure_ascii=False)) 
 else:
     print(json.dumps(res,ensure_ascii=False)) 
+>>>>>>> refs/remotes/origin/main
 
 
