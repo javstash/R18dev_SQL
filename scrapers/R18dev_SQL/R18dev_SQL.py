@@ -155,11 +155,7 @@ def decensor(string):
 SUPER_DUPER_JAV_CODE_REGEX = r'.*?([a-zA-Z|tT28|tT38]+)-?(\d+[zZ]?[eE]?)(?:-pt)?(\d{1,2})?.*' # https://regex101.com/r/Q41zue/1
 
 i = json.loads(sys.stdin.read())
-<<<<<<< HEAD
 log(json.dumps(i, ensure_ascii=ensure_ascii), "@", sys.argv[1])
-=======
-log(json.dumps(i, ensure_ascii=False), "@", sys.argv[1])
->>>>>>> refs/remotes/origin/main
 
 dvd_code_found = False
 
@@ -236,7 +232,6 @@ elif (sys.argv[1] == "sceneByURL"):
         log(sys.argv[1],"| URL | CONTENT ID: "+content_id+ "|" + input_url)
         flag = True
 
-<<<<<<< HEAD
 if(dvd_code_found):
     try:
         content_ids = get_content_id(dvd_code.upper(), service_code)
@@ -246,12 +241,6 @@ if(dvd_code_found):
         log("Cannot find a corresponding content_id for dvd_code:", dvd_code)
         content_id = dvd_code.replace('-','')
         log("Fallback to :", content_id)
-=======
-if(content_id_found == False):
-    content_ids = get_content_id(dvd_code.upper(), service_code)
-    content_id = content_ids[0][1]
-    log("DVD CODE:", dvd_code," -> ",content_ids[0][1],"@",content_ids[0][2])
->>>>>>> refs/remotes/origin/main
 
 scene_info = get_scene_info(content_id, service_code)
 log("CONTENT ID:", content_id,"@",service_code)
@@ -363,14 +352,7 @@ elif (LANG == 'EN'):
 
 conn.close()
 if (sys.argv[1] == "sceneByName"):
-<<<<<<< HEAD
     print(json.dumps([res],ensure_ascii=ensure_ascii)) 
 else:
     print(json.dumps(res,ensure_ascii=ensure_ascii)) 
-=======
-    print(json.dumps([res],ensure_ascii=False)) 
-else:
-    print(json.dumps(res,ensure_ascii=False)) 
->>>>>>> refs/remotes/origin/main
-
 
