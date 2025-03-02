@@ -346,7 +346,7 @@ if (LANG == 'EN' or stashdb_mode):
         res["director"] = director_en
     if tags_en is not None:
         res["tags"] = tags_en
-    if use_label_as_studio and label_en is not None:
+    if (use_label_as_studio or stashdb_mode) and label_en is not None:
         res["studio"] = label_en
     else:
         if studio_en is not None:
