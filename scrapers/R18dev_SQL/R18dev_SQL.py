@@ -21,6 +21,9 @@ else:
 # Set Language
 LANG='JA' # JA or EN
 
+# StashDB Submission Mode 
+stashdb_mode = False
+
 service_code = '%'
 # Uncomment the following line to force service_code='digital'
 # service_code = 'digital'
@@ -325,7 +328,32 @@ res["url"] = url
 res["image"] = image
 res["code"] = code
 
-if (LANG == 'JA'):
+if (LANG == 'EN' or stashdb_mode):
+    if stashdb_mode:
+        res["title"] = code
+        if title_en is not None:
+            res["details"] = title_en
+        if details_en is not None:
+            res["details"] += '\n\n'+details_en
+    else:
+        if title_en is not None:
+            res["title"] = title_en
+        if details_en is not None:
+            res["details"] = details_en
+    if actress_en is not None:
+        res["performers"] = actress_en
+    if director_en is not None:
+        res["director"] = director_en
+    if tags_en is not None:
+        res["tags"] = tags_en
+    if use_label_as_studio and label_en is not None:
+        res["studio"] = label_en
+    else:
+        if studio_en is not None:
+            res["studio"] = studio_en
+    if series_en is not None:
+        res["groups"] = [series_en]
+elif (LANG == 'JA'):
     if title_ja is not None:
         res["title"] = title_ja
     if details_ja is not None:
@@ -343,24 +371,7 @@ if (LANG == 'JA'):
             res["studio"] = studio_ja
     if series_ja is not None:
         res["groups"] = [series_ja]
-elif (LANG == 'EN'):
-    if title_en is not None:
-        res["title"] = title_en
-    if details_en is not None:
-        res["details"] = details_en
-    if actress_en is not None:
-        res["performers"] = actress_en
-    if director_en is not None:
-        res["director"] = director_en
-    if tags_en is not None:
-        res["tags"] = tags_en
-    if use_label_as_studio and label_en is not None:
-        res["studio"] = label_en
-    else:
-        if studio_en is not None:
-            res["studio"] = studio_en
-    if series_en is not None:
-        res["groups"] = [series_en]
+
 
 conn.close()
 log(res["performers"])
