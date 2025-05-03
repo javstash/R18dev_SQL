@@ -257,14 +257,16 @@ title_en = decensor(scene_info[2]) if scene_info[1] is None else decensor(scene_
 details_ja = scene_info[3]
 details_en = decensor(scene_info[4])
 date = scene_info[5].strftime("%Y-%m-%d")
-url = "https://r18.dev/videos/vod/movies/detail/-/id="+content_id+"/"
+urls = ["https://r18.dev/videos/vod/movies/detail/-/id="+content_id+"/"]
 service_code = scene_info[11]
 if service_code == "digital":
     image = "https://awsimgsrc.dmm.com/dig/"+scene_info[6]+".jpg"
-else: # assume mono
+    urls.append("https://www.dmm.co.jp/digital/videoa/-/detail/=/cid="+content_id+"/")
+elif service_code == "mono": # assume mono
     image = "https://awsimgsrc.dmm.com/dig/"+scene_info[6].replace('adult/','')+".jpg"
-    # Old DMM endpoint
-    #image = "https://pics.dmm.co.jp/"+scene_info[6]+".jpg"
+    urls.append("http://www.dmm.co.jp/mono/dvd/-/detail/=/cid="+content_id+"/")
+else:
+    image = "https://pics.dmm.co.jp/"+scene_info[6]+".jpg"
 
 maker_id = scene_info[7]
 label_id = scene_info[8]
@@ -324,7 +326,7 @@ else:
 res = {}
 
 res["date"] = date
-res["url"] = url
+res["urls"] = urls
 res["image"] = image
 res["code"] = code
 
