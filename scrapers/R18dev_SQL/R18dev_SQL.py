@@ -21,9 +21,6 @@ else:
 # Set Language
 LANG='JA' # JA or EN
 
-# StashDB Submission Mode 
-stashdb_mode = False
-
 service_code = '%'
 # Uncomment the following line to force service_code='digital'
 # service_code = 'digital'
@@ -38,6 +35,20 @@ conn = psycopg2.connect(database="r18",
                         user="postgres",
                         password="postgres",
                         port="5432")
+
+def find_performer_by_name(name, service_code='%'):
+    cursor = conn.cursor()
+    cursor.execute(f"""
+                    SELECT id, name_kanji, name_romaji
+                    FROM derived_actress 
+                    WHERE name_kanji = '{name}'
+                    ORDER BY id ASC
+                   """)
+    result = cursor.fetchone()
+    # When multiple content_id, will return in this priority: digital, e-books, mono, rental
+    cursor.close()
+
+    return result
 
 def get_content_id(dvd_code, service_code='%'):
     cursor = conn.cursor()
@@ -70,7 +81,7 @@ def get_scene_info(content_id, service_code='%'):
 def get_actress_info(content_id):
     cursor = conn.cursor()
     cursor.execute(f"""
-                    SELECT A.name_kanji, A.name_romaji, MT.target_en, A.id
+                    SELECT A.name_kanji, A.name_romaji, MT.target_en
                     FROM public.derived_video_actress VA
                     LEFT JOIN public.derived_actress A ON VA.actress_id=A.id
                     LEFT JOIN machine_translation MT ON A.name_kanji = MT.source_ja
@@ -113,8 +124,7 @@ def get_tags(content_id):
 def get_studio(maker_id):
     cursor = conn.cursor()
     cursor.execute(f"""
-                    SELECT M.name_ja, M.name_en, MT.target_en
-                    FROM public.derived_maker M
+                    SELECT M.name_ja, M.name_en, MT.target_en FROM public.derived_maker M
                     LEFT JOIN machine_translation MT ON M.name_ja = MT.source_ja
                     WHERE M.id = '{maker_id}'
                    """)
@@ -126,8 +136,7 @@ def get_studio(maker_id):
 def get_label(label_id):
     cursor = conn.cursor()
     cursor.execute(f"""
-                    SELECT L.name_ja, L.name_en, MT.target_en
-                    FROM public.derived_label L
+                    SELECT L.name_ja, L.name_en, MT.target_en FROM public.derived_label L
                     LEFT JOIN machine_translation MT ON L.name_ja = MT.source_ja
                     WHERE L.id = '{label_id}'
                    """)
@@ -139,8 +148,7 @@ def get_label(label_id):
 def get_series(series_id):
     cursor = conn.cursor()
     cursor.execute(f"""
-                    SELECT S.name_ja, S.name_en, MT.target_en
-                    FROM public.derived_series S
+                    SELECT S.name_ja, S.name_en, MT.target_en FROM public.derived_series S
                     LEFT JOIN machine_translation MT ON S.name_ja = MT.source_ja
                     WHERE S.id = '{series_id}'
                    """)
@@ -158,17 +166,26 @@ def decensor(string):
             string = string.replace(row_decensor[0],row_decensor[1])
     return string
 
-SUPER_DUPER_JAV_CODE_REGEX = r'.*?([A-Z]+|[3DSVR]+|[T28]+|[T38]+)-?(\d+[Z]?[E]?)(?:-pt)?(\d{1,2})?.*' # https://regex101.com/r/K6RizW/1
+SUPER_DUPER_JAV_CODE_REGEX = r'/.*?([A-Z]+|[3DSVR]+|[T28]+|[T38]+)-?(\d+[Z]?[E]?)(?:-pt)?(\d{1,2})?.*/gi' # https://regex101.com/r/K6RizW/1
 
 i = json.loads(sys.stdin.read())
 log(json.dumps(i, ensure_ascii=ensure_ascii), "@", sys.argv[1])
 
 dvd_code_found = False
 
+if (sys.argv[1] == "performerByName"):
+    actressid = str(find_performer_by_name(i['name'])[0])
+    res = {}
+    res["name"] = i['name']
+    res["urls"] = ["https://actress.dmm.co.jp/-/detail/=/actress_id="+actressid+"/","https://r18.dev/videos/vod/movies/list/?id="+actressid+"&type=actress"]
+    log(res)
+    print(json.dumps([res],ensure_ascii=ensure_ascii))
+    sys.exit()
+
 if (sys.argv[1] == "sceneByName"):
     query_string = i['name']
-    if(re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string, flags=re.IGNORECASE)):
-        dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string, flags=re.IGNORECASE).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string, flags=re.IGNORECASE).group(2)
+    if(re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string)):
+        dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string).group(2)
         dvd_code_found = True
         log(sys.argv[1],"| DVD CODE: "+dvd_code)        
     else:
@@ -183,17 +200,17 @@ elif (sys.argv[1] == "sceneByQueryFragment" or sys.argv[1] == "sceneByFragment")
             input_url = j
             if (flag):
                 pass
-            elif(re.search(r'.*id=(.*)/.*',input_url)):
-                content_id = re.search(r'.*id=(.*)/.*',input_url).group(1)
+            elif(re.search(r'.*r18\.dev.*id=(\w*)\/?',input_url)):
+                content_id = re.search(r'.*r18\.dev.*id=(\w*)\/?',input_url).group(1)
                 log(sys.argv[1],"| URL | CONTENT ID: "+content_id + "|" + input_url)
                 flag = True
-            elif(re.search(r'.*dmm.*mono.*cid=(.*)/.*',input_url)):
-                content_id = re.search(r'.*dmm.*mono.*cid=(.*)/.*',input_url).group(1)
+            elif(re.search(r'.*dmm.*mono.*cid=(\w*)\/?',input_url)):
+                content_id = re.search(r'.*dmm.*mono.*cid=(\w*)\/?',input_url).group(1)
                 service_code = "mono"
                 log(sys.argv[1],"| URL | CONTENT ID: "+content_id+ "|" + input_url)
                 flag = True
-            elif(re.search(r'.*dmm.*videoa.*cid=(.*)/.*',input_url)):
-                content_id = re.search(r'.*dmm.*videoa.*cid=(.*)/.*',input_url).group(1)
+            elif(re.search(r'.*dmm.*videoa.*cid=(\w*)\/?',input_url)):
+                content_id = re.search(r'.*dmm.*videoa.*cid=(\w*)\/?',input_url).group(1)
                 service_code = "digital"
                 log(sys.argv[1],"| URL | CONTENT ID: "+content_id+ "|" + input_url)
                 flag = True
@@ -202,8 +219,8 @@ elif (sys.argv[1] == "sceneByQueryFragment" or sys.argv[1] == "sceneByFragment")
     try:
         if(flag == False):
             input_code = i['code']
-            if(re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code, flags=re.IGNORECASE)):
-                dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code, flags=re.IGNORECASE).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code, flags=re.IGNORECASE).group(2)
+            if(re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code)):
+                dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,input_code).group(2)
                 log(sys.argv[1],"| CODE | DVD CODE: "+dvd_code)
                 flag = True
                 dvd_code_found = True
@@ -212,8 +229,8 @@ elif (sys.argv[1] == "sceneByQueryFragment" or sys.argv[1] == "sceneByFragment")
     try:
         if(flag == False):
             input_title = i['title']
-            if(re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title, flags=re.IGNORECASE)):
-                dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title, flags=re.IGNORECASE).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title, flags=re.IGNORECASE).group(2)
+            if(re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title)):
+                dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,input_title).group(2)
                 log(sys.argv[1],"| TITLE | DVD CODE: "+dvd_code)
                 dvd_code_found = True
         else:
@@ -223,17 +240,17 @@ elif (sys.argv[1] == "sceneByQueryFragment" or sys.argv[1] == "sceneByFragment")
 
 elif (sys.argv[1] == "sceneByURL"):
     input_url = i['url']
-    if(re.search(r'.*id=(.*)/.*',input_url)):
-        content_id = re.search(r'.*id=(.*)/.*',input_url).group(1)
+    if(re.search(r'.*r18\.dev.*id=(\w*)\/?',input_url)):
+        content_id = re.search(r'.*r18\.dev.*id=(\w*)\/?',input_url).group(1)
         log(sys.argv[1],"| URL | CONTENT ID: "+content_id + "|" + input_url)
         flag = True
-    elif(re.search(r'.*dmm.*mono.*cid=(.*)/.*',input_url)):
-        content_id = re.search(r'.*dmm.*mono.*cid=(.*)/.*',input_url).group(1)
+    elif(re.search(r'.*dmm.*mono.*cid=(\w*)\/?',input_url)):
+        content_id = re.search(r'.*dmm.*mono.*cid=(\w*)\/?',input_url).group(1)
         service_code = "mono"
         log(sys.argv[1],"| URL | CONTENT ID: "+content_id+ "|" + input_url)
         flag = True
-    elif(re.search(r'.*dmm.*videoa.*cid=(.*)/.*',input_url)):
-        content_id = re.search(r'.*dmm.*videoa.*cid=(.*)/.*',input_url).group(1)
+    elif(re.search(r'.*dmm.*videoa.*cid=(\w*)\/?',input_url)):
+        content_id = re.search(r'.*dmm.*videoa.*cid=(\w*)\/?',input_url).group(1)
         service_code = "digital"
         log(sys.argv[1],"| URL | CONTENT ID: "+content_id+ "|" + input_url)
         flag = True
@@ -257,8 +274,11 @@ title_en = decensor(scene_info[2]) if scene_info[1] is None else decensor(scene_
 details_ja = scene_info[3]
 details_en = decensor(scene_info[4])
 date = scene_info[5].strftime("%Y-%m-%d")
-urls = ["https://r18.dev/videos/vod/movies/detail/-/id="+content_id+"/"]
+url = "https://r18.dev/videos/vod/movies/detail/-/id="+content_id+"/"
 service_code = scene_info[11]
+
+urls = []
+urls.append(url)
 if service_code == "digital":
     image = "https://awsimgsrc.dmm.com/dig/"+scene_info[6]+".jpg"
     urls.append("https://www.dmm.co.jp/digital/videoa/-/detail/=/cid="+content_id+"/")
@@ -274,10 +294,10 @@ series_id = scene_info[9]
 code = scene_info[10]
     
 actress_info = get_actress_info(content_id)
-actress_ja = [{'name': i[0], 'urls': ['https://r18.dev/videos/vod/movies/list/?id='+str(i[3])+'&type=actress']} for i in actress_info]
-actress_en = [{'name': i[2], 'urls': ['https://r18.dev/videos/vod/movies/list/?id='+str(i[3])+'&type=actress']} if i[1] is None else {'name': i[1], 'url': 'https://r18.dev/videos/vod/movies/list/?id='+str(i[3])+'&type=actress'} for i in actress_info]
+actress_ja = [{'name': i[0]} for i in actress_info]
+actress_en = [{'name': i[2]} if i[1] is None else {'name': i[1]} for i in actress_info]
 # If actress_en is still None, return the Japanese name - hope you have aliases set up locally
-actress_en = [i if j['name'] is None else j for i,j in zip(actress_ja,actress_en)]
+actress_en = [{'name': i['name']} if j['name'] is None else {'name': j['name']} for i,j in zip(actress_ja,actress_en)]
 
 director_info = get_director_info(content_id)
 director_ja = [i[0] for i in director_info]
@@ -297,9 +317,6 @@ studio_ja = {'name': studio_info[0]}
 studio_en = {'name': studio_info[2]} if studio_info[1] is None else {'name': studio_info[1]}
 studio_en = {'name': studio_info[0]} if studio_en['name'] is None else studio_en
 
-studio_ja['url'] = "https://r18.dev/videos/vod/movies/list/?id="+str(maker_id)+"&type=studio"
-studio_en['url'] = "https://r18.dev/videos/vod/movies/list/?id="+str(maker_id)+"&type=studio"
-
 if(label_id is None):
     label_ja = None
     label_en = None
@@ -308,9 +325,6 @@ else:
     label_ja = {'name': label_info[0]}
     label_en = {'name': decensor(label_info[2])} if label_info[1] is None else {'name': decensor(label_info[1])}
     label_en = {'name': label_info[0]} if label_en['name'] is None else label_en
-    label_ja['url'] = "https://r18.dev/videos/vod/movies/list/?id="+str(label_id)+"&type=label"
-    label_en['url'] = "https://r18.dev/videos/vod/movies/list/?id="+str(label_id)+"&type=label"
-
 
 if (series_id is None):
     series_ja = None
@@ -320,42 +334,16 @@ else:
     series_ja = {'name': series_info[0]}
     series_en = {'name': decensor(series_info[2])} if series_info[1] is None else {'name': decensor(series_info[1])}
     series_en = {'name': series_info[0]} if series_en['name'] is None else series_en
-    series_ja['urls'] = ["https://r18.dev/videos/vod/movies/list/?id="+str(series_id)+"&type=series"]
-    series_en['urls'] = ["https://r18.dev/videos/vod/movies/list/?id="+str(series_id)+"&type=series"]
 
 res = {}
+
 
 res["date"] = date
 res["urls"] = urls
 res["image"] = image
 res["code"] = code
 
-if (LANG == 'EN' or stashdb_mode):
-    if stashdb_mode:
-        res["title"] = code
-        if title_en is not None:
-            res["details"] = title_en
-        if details_en is not None:
-            res["details"] += '\n\n'+details_en
-    else:
-        if title_en is not None:
-            res["title"] = title_en
-        if details_en is not None:
-            res["details"] = details_en
-    if actress_en is not None:
-        res["performers"] = actress_en
-    if director_en is not None:
-        res["director"] = director_en
-    if tags_en is not None:
-        res["tags"] = tags_en
-    if (use_label_as_studio or stashdb_mode) and label_en is not None:
-        res["studio"] = label_en
-    else:
-        if studio_en is not None:
-            res["studio"] = studio_en
-    if series_en is not None:
-        res["groups"] = [series_en]
-elif (LANG == 'JA'):
+if (LANG == 'JA'):
     if title_ja is not None:
         res["title"] = title_ja
     if details_ja is not None:
@@ -373,10 +361,26 @@ elif (LANG == 'JA'):
             res["studio"] = studio_ja
     if series_ja is not None:
         res["groups"] = [series_ja]
-
+elif (LANG == 'EN'):
+    if title_en is not None:
+        res["title"] = title_en
+    if details_en is not None:
+        res["details"] = details_en
+    if actress_en is not None:
+        res["performers"] = actress_en
+    if director_en is not None:
+        res["director"] = director_en
+    if tags_en is not None:
+        res["tags"] = tags_en
+    if use_label_as_studio and label_en is not None:
+        res["studio"] = label_en
+    else:
+        if studio_en is not None:
+            res["studio"] = studio_en
+    if series_en is not None:
+        res["groups"] = [series_en]
 
 conn.close()
-log(res["performers"])
 if (sys.argv[1] == "sceneByName"):
     print(json.dumps([res],ensure_ascii=ensure_ascii)) 
 else:
