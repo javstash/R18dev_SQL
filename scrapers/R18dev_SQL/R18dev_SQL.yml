@@ -1,5 +1,5 @@
 name: "R18dev_SQL"
-# requires: py_common
+# requires: py_common, psycopg2-binary
 
 sceneByName:  
   action: script
@@ -32,3 +32,16 @@ sceneByURL:
       - python
       - R18dev_SQL.py
       - sceneByURL
+performerByName:
+  action: script  
+  script:
+    - python
+    - R18dev_SQL.py
+    - performerByName
+performerByFragment:
+  action: script  
+  script:
+    - python
+    - R18dev_SQL.py
+    - performerByFragment
+    

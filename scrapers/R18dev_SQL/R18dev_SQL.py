@@ -149,6 +149,56 @@ def get_series(series_id):
 
     return result
 
+def find_performer_by_name(name):
+    cursor = conn.cursor()
+    cursor.execute(f"""
+                    SELECT id, name_kanji, name_romaji
+                    FROM derived_actress 
+                    WHERE name_kanji = '{name}' or name_romaji = '{name}'
+                    ORDER BY id ASC
+                   """)
+    result = cursor.fetchall()
+    cursor.close()
+    return result
+
+def find_performer_by_id(id):
+    cursor = conn.cursor()
+    cursor.execute(f"""
+                    SELECT id, name_kanji, name_romaji
+                    FROM derived_actress 
+                    WHERE id = {id}
+                    ORDER BY id ASC
+                   """)
+    result = cursor.fetchone()
+    cursor.close()
+    return result
+
+def searchPerformer(name):
+    ret = []
+    results = find_performer_by_name(i['name'])
+    for result in results:
+        p = {}
+        p['name'] = result[1] + "\t" + ("" if result[2] is None else result[2]) + "\t (" + str(result[0]) + ")"
+        p['url'] = str(result[0])
+        log("search:",p['url'])
+        ret.append(p)
+    return ret
+
+def scrapePerformer(input):
+    ret = {}
+    actressid = str(input['url'])
+    log(actressid)
+    result = find_performer_by_id(actressid)
+    if (LANG == "JA"):
+        ret['name'] = result[1]
+        ret['aliases'] = "" if result[2] is None else result[2]
+    else:
+        ret['name'] = result[1] if result[2] is None else result[2]
+        ret['aliases'] = result[1]
+
+    ret['urls'] = ["https://actress.dmm.co.jp/-/detail/=/actress_id="+actressid+"/","https://r18.dev/videos/vod/movies/list/?id="+actressid+"&type=actress"]
+    return ret
+
 def decensor(string):
     if string is None:
         return None
@@ -158,14 +208,28 @@ def decensor(string):
             string = string.replace(row_decensor[0],row_decensor[1])
     return string
 
+def readJSONInput():
+    input = sys.stdin.read()
+    return json.loads(input)
+
 SUPER_DUPER_JAV_CODE_REGEX = r'.*?([A-Z]+|[3DSVR]+|[T28]+|[T38]+)-?(\d+[Z]?[E]?)(?:-pt)?(\d{1,2})?.*' # https://regex101.com/r/K6RizW/1
 
-i = json.loads(sys.stdin.read())
+i = readJSONInput()
 log(json.dumps(i, ensure_ascii=ensure_ascii), "@", sys.argv[1])
 
 dvd_code_found = False
 
-if (sys.argv[1] == "sceneByName"):
+if (sys.argv[1] == "performerByName"):
+    ret = searchPerformer(i['name'])
+    print(json.dumps(ret))
+    sys.exit(0)
+
+elif (sys.argv[1] == "performerByFragment"):
+    ret = scrapePerformer(i)
+    print(json.dumps(ret))
+    sys.exit(0)
+
+elif (sys.argv[1] == "sceneByName"):
     query_string = i['name']
     if(re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string, flags=re.IGNORECASE)):
         dvd_code = re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string, flags=re.IGNORECASE).group(1)+'-'+re.search(SUPER_DUPER_JAV_CODE_REGEX,query_string, flags=re.IGNORECASE).group(2)
