@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 import sys, json, re, csv
+import requests
 import psycopg2
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -178,7 +179,11 @@ def searchPerformer(name):
     results = find_performer_by_name(i['name'])
     for result in results:
         p = {}
-        p['name'] = result[1] + "\t" + ("" if result[2] is None else result[2]) + "\t (" + str(result[0]) + ")"
+        if(result[2] is None):
+            eng = wikidata(str(result[0]))
+        else:
+            eng = result[2]
+        p['name'] = result[1] + "\t" + ("" if eng is None else eng) + "\t (" + str(result[0]) + ")"
         p['url'] = str(result[0])
         log("search:",p['url'])
         ret.append(p)
@@ -187,17 +192,44 @@ def searchPerformer(name):
 def scrapePerformer(input):
     ret = {}
     actressid = str(input['url'])
-    log(actressid)
+    log("Actress ID:", actressid)
     result = find_performer_by_id(actressid)
+    if(result[2] is None):
+        eng = wikidata(str(result[0]))
+    else:
+        eng = result[2]
     if (LANG == "JA"):
         ret['name'] = result[1]
-        ret['aliases'] = "" if result[2] is None else result[2]
+        ret['aliases'] = "" if eng is None else eng
     else:
-        ret['name'] = result[1] if result[2] is None else result[2]
+        ret['name'] = result[1] if eng is None else eng
         ret['aliases'] = result[1]
 
     ret['urls'] = ["https://actress.dmm.co.jp/-/detail/=/actress_id="+actressid+"/","https://r18.dev/videos/vod/movies/list/?id="+actressid+"&type=actress"]
     return ret
+
+def wikidata(pid):
+    wikidata_url = 'https://query.wikidata.org/sparql'
+    query = f'''
+    SELECT DISTINCT ?item ?itemLabel WHERE {{
+      SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
+      {{
+        SELECT DISTINCT ?item WHERE {{
+          ?item p:P9781 ?statement0.
+          ?statement0 (ps:P9781) "{pid}".
+        }}
+        LIMIT 3
+      }}
+    }}
+    '''
+    r = requests.get(wikidata_url, params = {'format': 'json', 'query': query})
+    data = r.json()
+    log(data)
+    try:
+        wikidata_name = data['results']['bindings'][0]['itemLabel']['value']
+    except:
+        wikidata_name = None
+    return wikidata_name
 
 def decensor(string):
     if string is None:
