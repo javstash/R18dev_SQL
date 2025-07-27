@@ -1,4 +1,4 @@
-name: "R18dev_SQL"
+name: "JAVStash-R18dev_SQL"
 # requires: py_common, psycopg2-binary
 
 sceneByName:  
