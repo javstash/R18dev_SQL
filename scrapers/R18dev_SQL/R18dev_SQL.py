@@ -360,7 +360,7 @@ if service_code == "digital":
     urls.append("https://www.dmm.co.jp/digital/videoa/-/detail/=/cid="+content_id+"/")
 elif service_code == "mono": # assume mono
     image = "https://awsimgsrc.dmm.com/dig/"+scene_info[6].replace('adult/','')+".jpg"
-    urls.append("http://www.dmm.co.jp/mono/dvd/-/detail/=/cid="+content_id+"/")
+    urls.append("https://www.dmm.co.jp/mono/dvd/-/detail/=/cid="+content_id+"/")
 else:
     image = "https://pics.dmm.co.jp/"+scene_info[6]+".jpg"
 
