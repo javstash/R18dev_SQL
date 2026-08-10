@@ -616,28 +616,8 @@ if image:
 if code:
     res["code"] = code
 
-# Build base title with robust fallbacks
-if title_en and str(title_en).strip():
-    base_title = str(title_en).strip()
-elif title_ja and str(title_ja).strip():
-    base_title = str(title_ja).strip()
-elif code:
-    base_title = ""
-else:
-    base_title = content_id
-
-# Strip raw unformatted code prefixes from base title to prevent duplication
-if base_title:
-    base_title = re.sub(r'^(?:\d*[a-zA-Z]{1,6}[-_]?\d+\s*)+', '', base_title).strip()
-
-# Format final title with DVD code prefix
-if code:
-    if base_title and base_title != code:
-        res["title"] = f"{code} {base_title}"
-    else:
-        res["title"] = code
-else:
-    res["title"] = base_title
+# Set title strictly to the code (or fallback to content_id if code is missing)
+res["title"] = code if code else content_id
 
 # Details & Metadata assignment
 if (LANG == 'EN' or stashdb_mode):
