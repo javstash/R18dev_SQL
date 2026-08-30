@@ -205,7 +205,7 @@ def scrapePerformer(input):
         ret['name'] = result[1] if eng is None else eng
         ret['aliases'] = result[1]
 
-    ret['urls'] = ["https://actress.dmm.co.jp/-/detail/=/actress_id="+actressid+"/","https://r18.dev/videos/vod/movies/list/?id="+actressid+"&type=actress"]
+    ret['urls'] = ["https://video.dmm.co.jp/av/list/?actress="+actressid,"https://r18.dev/videos/vod/movies/list/?id="+actressid+"&type=actress"]
     return ret
 
 def wikidata(pid):
