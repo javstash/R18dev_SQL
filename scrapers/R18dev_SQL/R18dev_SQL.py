@@ -209,6 +209,7 @@ def scrapePerformer(input):
     return ret
 
 def wikidata(pid):
+    return None # Broken?
     wikidata_url = 'https://query.wikidata.org/sparql'
     query = f'''
     SELECT DISTINCT ?item ?itemLabel WHERE {{
