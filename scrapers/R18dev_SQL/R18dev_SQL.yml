@@ -23,11 +23,6 @@ sceneByURL:
   - action: script
     url:
       - r18.dev/videos/vod/movies/detail/-/i
-    queryURL: "https://r18.dev/videos/vod/movies/detail/-/combined={url}/json"
-    queryURLReplace:
-      url:
-        - regex: ".+/id=(.+)/?$"
-          with: "$1"
     script:
       - python
       - R18dev_SQL.py
